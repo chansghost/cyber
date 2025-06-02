@@ -1,41 +1,32 @@
-"use client"
-import {ArrowDownCircleIcon, PhotoIcon} from '@heroicons/react/24/solid'
-import {
-  useEffect,
-  useState
-} from "react";
+"use client";
+import { ArrowDownCircleIcon, PhotoIcon } from "@heroicons/react/24/solid";
+import { useEffect, useState } from "react";
 import KeyField from "@/components/KeyField";
 import readFileAsText from "@/server/readFileAsText";
 import postFile from "@/server/postFile";
 import Link from "next/link";
 
-
 const types: Type[] = ["CTR", "CBC", "ECB"];
 const modes: Mode[] = ["encrypt", "decrypt"];
 
 export default function Home() {
-  const [cypherKey, setCypherKey] = useState('0123456789ABCDEF');
+  const [cypherKey, setCypherKey] = useState("0123456789ABCDEF");
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [type, setType] = useState<Type>("CTR");
   const [mode, setMode] = useState<Mode>("encrypt");
-
   const [responseFiles, setResponseFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [fileLinks, setFileLinks] = useState<ResponseFiles>([]);
 
-
   useEffect(() => {
-
-    // Generate links for each file in responseFiles
-    const links: ResponseFiles = responseFiles.map((file: any, index:number) => {
-      const blob = new Blob([file.res], {type: 'text/plain'});
+    const links: ResponseFiles = responseFiles.map((file, index) => {
+      const blob = new Blob([file.res], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
-      return {name: file.name, url};
+      return { name: file.name, url };
     });
     setFileLinks(links);
-
     return () => {
-      links.forEach((link: { url: string; }) => URL.revokeObjectURL(link.url));
+      links.forEach((link) => URL.revokeObjectURL(link.url));
     };
   }, [responseFiles]);
 
@@ -49,49 +40,40 @@ export default function Home() {
       for (const file of files) {
         try {
           const text = await readFileAsText(file);
-          newFiles.push({
-            name: file.name,
-            size: file.size,
-            text: text
-          });
+          newFiles.push({ name: file.name, size: file.size, text });
         } catch (error) {
-          throw new Error(`Failed to read file: ${file.name}`)
+          throw new Error(`Failed to read file: ${file.name}`);
         }
       }
-      console.log("Selected files:", fileList);
-      console.log("Processed files:", newFiles);
 
-      setUploadedFiles(prevFiles => [...prevFiles, ...newFiles]);
+      setUploadedFiles((prev) => [...prev, ...newFiles]);
     }
   }
 
   async function handleSubmit() {
-    if (uploadedFiles.length === 0){
+    if (uploadedFiles.length === 0) {
       setError("Please upload a file");
       return;
     }
-    if(cypherKey === "") {
-      setError("Key is required");
-      return;
-    }
-    if(cypherKey.length !== 16) {
+    if (!cypherKey || cypherKey.length !== 16) {
       setError("Key must be 16 bytes long");
       return;
     }
 
     try {
-      const response = await Promise.all(uploadedFiles.map(file => postFile(cypherKey, type, mode, file)));
-      console.log(response)
+      const response = await Promise.all(
+        uploadedFiles.map((file) =>
+          postFile(cypherKey, type, mode, file)
+        )
+      );
       setResponseFiles(response);
+      setError(null);
     } catch (error) {
       setError((error as Error).message);
-      return;
     }
-    setError(null);
   }
 
-  function handleKeyChange (e: React.ChangeEvent<HTMLInputElement>) {
-    e.preventDefault();
+  function handleKeyChange(e: React.ChangeEvent<HTMLInputElement>) {
     setCypherKey(e.target.value);
   }
 
@@ -102,130 +84,128 @@ export default function Home() {
     setType("CTR");
     setError(null);
     setResponseFiles([]);
-    setFileLinks([])
+    setFileLinks([]);
   }
 
-
   return (
-      <div className="max-w-4xl mx-auto px-8 py-8">
-        <h1 className="text-5xl font-bold">
-          Szyfrowanie i <br/> Deszyfrowanie plików
-        </h1>
-        <form onSubmit={(e) => {
-  e.preventDefault();
-  handleSubmit();
-}} className="bg-gray-50 p-4 rounded-lg mt-10">
-          <div className="space-y-12">
-            <div className="border-b border-gray-900/10 pb-12">
-              <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-                <KeyField cypherKey={cypherKey} handleKeyChange={handleKeyChange}/>
-                <div className="sm:col-span-3">
-                  <label htmlFor="location" className="block text-sm font-medium leading-6 text-gray-900">
-                    Mode
-                  </label>
-                  <select
-                      id="mode"
-                      name="mode"
-                      onChange={(e) => setMode(e.target.value as Mode)}
-                      value={mode}
-                      className="mt-2 block w-full bg-transparent rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-green-600 sm:text-sm sm:leading-6"
-                  >
-                    {modes.map((mode, index) => (
-                        <option key={index}>{mode}</option>
-                    ))}
-                  </select>
-                </div>
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      <h1 className="text-4xl font-bold text-center text-pink-700 mb-10">
+        Szyfrowanie / Deszyfrowanie
+      </h1>
 
-                <div className="sm:col-span-3">
-                  <label htmlFor="location" className="block text-sm font-medium leading-6 text-gray-900">
-                    Type
-                  </label>
-                  <select
-                      id="type"
-                      name="type"
-                      value={type}
-                      onChange={(e) => setType(e.target.value as Type)}
-                      className="mt-2 block w-full rounded-md bg-transparent border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-green-600 sm:text-sm sm:leading-6"
-                  >
-                    {types.map((type, index) => (
-                        <option key={index}>{type}</option>
-                    ))}
-                  </select>
-                </div>
+      <div className="bg-white rounded-2xl shadow-md p-8 space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <KeyField cypherKey={cypherKey} handleKeyChange={handleKeyChange} />
 
-                <div className="col-span-full">
-                  <label htmlFor="cover-photo" className="block text-sm font-medium leading-6 text-gray-900">
-                    Files
-                  </label>
-                  <div
-                      className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-                    <div className="text-center">
-                      <PhotoIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true"/>
-                      <div className="mt-4 flex text-sm leading-6 text-gray-600">
-                        <label
-                            htmlFor="file-upload"
-                            className="relative cursor-pointer rounded-md font-semibold text-green-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-green-600 focus-within:ring-offset-2 hover:text-green-500"
-                        >
-                          <span>Upload a file</span>
-                          <input id="file-upload" name="file-upload" type="file" accept=".txt"
-                                 onChange={handleFileChange} multiple className="sr-only"/>
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs leading-5 text-gray-600">.TXT</p>
-                    </div>
-                  </div>
-                  {uploadedFiles.length > 0 && (
-                      <div className="mt-4">
-                        <p className="font-semibold text-gray-700">Uploaded files:</p>
-                        <ul className="flex flex-col gap-y-5 mt-5">
-                          {uploadedFiles.map((file, index) => (
-                              <li key={index} className="flex justify-between items-center">
-                                <div>
-                                  <p>{file.name}</p>
-                                  <p className="text-xs leading-5 text-gray-600">{file.size} bytes</p>
-                                </div>
-                              </li>
-                          ))}
-                        </ul>
-                      </div>
-                  )}
-                </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700">Tryb</label>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as Mode)}
+                className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
+              >
+                {modes.map((m, i) => (
+                  <option key={i}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700">Algorytm</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as Type)}
+                className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500"
+              >
+                {types.map((t, i) => (
+                  <option key={i}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Pliki .txt</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center text-center bg-gray-50 hover:bg-gray-100 transition">
+                <PhotoIcon className="h-10 w-10 text-gray-400" />
+                <label
+                  htmlFor="file-upload"
+                  className="mt-2 text-pink-600 hover:underline cursor-pointer"
+                >
+                  Wybierz pliki
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".txt"
+                    multiple
+                    onChange={handleFileChange}
+                    className="sr-only"
+                  />
+                </label>
+                <p className="text-xs text-gray-500 mt-1">Tylko pliki .txt</p>
               </div>
+
+              {uploadedFiles.length > 0 && (
+                <ul className="mt-4 divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
+                  {uploadedFiles.map((file, idx) => (
+                    <li key={idx} className="flex justify-between p-3">
+                      <span className="text-gray-800">{file.name}</span>
+                      <span className="text-gray-500 text-sm">{file.size} B</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-end gap-x-6">
-            <span className="text-red-500">{error}</span>
-            <button onClick={handleCancel} type="button" className="text-sm font-semibold leading-6 text-gray-900">
-              Restart Form
+
+          {error && <p className="text-red-600 mt-4">{error}</p>}
+
+          <div className="mt-6 flex justify-end space-x-4">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
+            >
+              Odśwież
             </button>
             <button
-                type="submit"
-                className="rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+              type="submit"
+              className="px-5 py-2 bg-pink-600 text-white rounded-md hover:bg-pink-500 transition"
             >
-              Upload
+              Prześlij
             </button>
           </div>
         </form>
-        {fileLinks.length > 0 && (
-          <div className="bg-gray-50 p-4 rounded-lg mt-10">
-
-                <div className="mt-4">
-                  <p className="font-semibold text-gray-700">Download Converted files:</p>
-                  <ul className="flex flex-col gap-y-5 mt-5">
-                    {fileLinks.map((file: any, index: number) => (
-                        <li key={index} className="flex justify-start items-center gap-x-4">
-                          <ArrowDownCircleIcon className="h-6 w-6 text-green-600" aria-hidden="true"/>
-                          <Link download={file.url} href={file.url} target="_blank">
-                            <p>{file.name}</p>
-                          </Link>
-                        </li>
-                    ))}
-                  </ul>
-                </div>
-          </div>
-        )}
       </div>
 
+      {fileLinks.length > 0 && (
+        <div className="mt-10 bg-white rounded-2xl shadow-md p-8">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Pobierz zmodyfikowane pliki:</h2>
+          <ul className="space-y-3">
+            {fileLinks.map((file, index) => (
+              <li
+                key={index}
+                className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition"
+              >
+                <ArrowDownCircleIcon className="h-6 w-6 text-green-600" />
+                <Link
+                  download
+                  href={file.url}
+                  target="_blank"
+                  className="text-green-700 hover:underline"
+                >
+                  {file.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }

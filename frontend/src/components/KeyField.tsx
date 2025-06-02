@@ -8,7 +8,7 @@ export default function KeyField({cypherKey, handleKeyChange}:{
     return(
         <div className="sm:col-span-4">
             <label htmlFor="username" className="block text-sm font-medium leading-6 text-gray-900">
-                Key for Encryption and Decryption
+                Klucz do szyfrowania
             </label>
             <div className="mt-2">
                 <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-green-600 sm:max-w-md px-2">
