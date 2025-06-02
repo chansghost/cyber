@@ -62,9 +62,6 @@ def ctr_decrypt(ciphertext, key, nonce):
     except ValueError as e:
         return None
     
-
-
-#ECB - to musicie poprawić bo jest źle - encryptowanie i decyptowanie xorem jest do podmianki
 def ecb_encrypt(plaintext, key):
     block_size = 16
     key = key.ljust(block_size, b'\0')[:block_size]  # upewnij się, że key ma długość 16 bajtów
@@ -81,7 +78,7 @@ def ecb_decrypt(ciphertext, key):
         decrypted = cipher.decrypt(ciphertext)
         plaintext = unpad(decrypted, block_size)
         return plaintext
-    except(ValueError, InvalidKey) as e:
+    except ValueError:
         return None
 
 
@@ -107,5 +104,5 @@ def cbc_decrypt(ciphertext, key, iv):
         unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
         plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
         return plaintext
-    except (ValueError, InvalidKey) as e:
+    except ValueError:
         return None

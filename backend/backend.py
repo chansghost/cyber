@@ -47,7 +47,6 @@ def decrypt_cbc():
     if not raw.startswith(b"MODE:CBC\n"):
         return jsonify({"error": "Wrong encryption mode. Expected CBC."}), 400
 
-    #ciphertext = bytes.fromhex(data['ciphertext'])
     ciphertext = raw[len(b"MODE:CBC\n"):]
     iv = b"JEODB34DOlgSHuRP"
     decrypted_plaintext = cbc_decrypt(ciphertext, key, iv)
@@ -97,7 +96,6 @@ def decrypt_ctr():
     if not raw.startswith(b"MODE:CTR\n"):
         return jsonify({"error": "Wrong encryption mode. Expected CTR."}), 400
 
-    #ciphertext = bytes.fromhex(data['ciphertext'])
     ciphertext = raw[len(b"MODE:CTR\n"):]
 
     nonce = b"ABJ3k6lq12345678"  # dokładnie 16 bajtów
