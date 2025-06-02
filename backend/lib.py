@@ -55,9 +55,13 @@ def ctr_encrypt(plaintext, key, nonce):
 
 def ctr_decrypt(ciphertext, key, nonce):
     # Stworzenie obiektu deszyfrującego w trybie CTR
-    cipher = Cipher(algorithms.AES(key), modes.CTR(nonce), backend=default_backend())
-    decryptor = cipher.decryptor()
-    return decryptor.update(ciphertext) + decryptor.finalize()
+    try:
+        cipher = Cipher(algorithms.AES(key), modes.CTR(nonce), backend=default_backend())
+        decryptor = cipher.decryptor()
+        return decryptor.update(ciphertext) + decryptor.finalize()
+    except ValueError as e:
+        return None
+    
 
 
 #ECB - to musicie poprawić bo jest źle - encryptowanie i decyptowanie xorem jest do podmianki
@@ -70,12 +74,15 @@ def ecb_encrypt(plaintext, key):
     return ciphertext
 
 def ecb_decrypt(ciphertext, key):
-    block_size = 16
-    key = key.ljust(block_size, b'\0')[:block_size]
-    cipher = AES.new(key, AES.MODE_ECB)
-    decrypted = cipher.decrypt(ciphertext)
-    plaintext = unpad(decrypted, block_size)
-    return plaintext
+    try:
+        block_size = 16
+        key = key.ljust(block_size, b'\0')[:block_size]
+        cipher = AES.new(key, AES.MODE_ECB)
+        decrypted = cipher.decrypt(ciphertext)
+        plaintext = unpad(decrypted, block_size)
+        return plaintext
+    except(ValueError, InvalidKey) as e:
+        return None
 
 
 #CBC
@@ -91,11 +98,14 @@ def cbc_encrypt(plaintext, key, iv):
 
 def cbc_decrypt(ciphertext, key, iv):
     # Create a cipher object using the CBC mode
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-    decryptor = cipher.decryptor()
-    padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    try:
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+        padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
-    # Remove padding from the plaintext
-    unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
-    plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
-    return plaintext
+        # Remove padding from the plaintext
+        unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+        plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
+        return plaintext
+    except (ValueError, InvalidKey) as e:
+        return None

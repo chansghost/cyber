@@ -38,7 +38,11 @@ def decrypt_cbc():
     name = data['name']
     key = data['key'].encode()
 
-    raw = bytes.fromhex(data['ciphertext'])
+    try:
+        raw = bytes.fromhex(data['ciphertext'])
+    except ValueError:
+        return jsonify({"error": "Ciphertext is not a valid hexadecimal string."}), 400
+
 
     if not raw.startswith(b"MODE:CBC\n"):
         return jsonify({"error": "Wrong encryption mode. Expected CBC."}), 400
@@ -47,7 +51,14 @@ def decrypt_cbc():
     ciphertext = raw[len(b"MODE:CBC\n"):]
     iv = b"JEODB34DOlgSHuRP"
     decrypted_plaintext = cbc_decrypt(ciphertext, key, iv)
-    return jsonify({'res': decrypted_plaintext.decode(), "name": name}), 200
+    if decrypted_plaintext is None:
+        return jsonify({"error": "Invalid ciphertext or corrupted data."}), 400
+    try:
+        decoded = decrypted_plaintext.decode()
+    except UnicodeDecodeError:
+        return jsonify({"error": "Decryption succeeded but output is not valid UTF-8."}), 400
+
+    return jsonify({'res': decoded, "name": name}), 200
 
 @app.route('/encrypt/CTR', methods=['POST'])
 def encrypt_ctr():
@@ -77,8 +88,11 @@ def decrypt_ctr():
 
     name = data['name']
     key = data['key'].encode()
-
-    raw = bytes.fromhex(data['ciphertext'])
+    
+    try:
+        raw = bytes.fromhex(data['ciphertext'])
+    except ValueError:
+        return jsonify({"error": "Ciphertext is not a valid hexadecimal string."}), 400
 
     if not raw.startswith(b"MODE:CTR\n"):
         return jsonify({"error": "Wrong encryption mode. Expected CTR."}), 400
@@ -88,7 +102,14 @@ def decrypt_ctr():
 
     nonce = b"ABJ3k6lq12345678"  # dokładnie 16 bajtów
     decrypted_plaintext = ctr_decrypt(ciphertext, key, nonce)
-    return jsonify({'res': decrypted_plaintext.decode(), "name": name}), 200
+    if decrypted_plaintext is None:
+        return jsonify({"error": "Invalid ciphertext or corrupted data."}), 400
+    try:
+        decoded = decrypted_plaintext.decode()
+    except UnicodeDecodeError:
+        return jsonify({"error": "Decryption succeeded but output is not valid UTF-8."}), 400
+
+    return jsonify({'res': decoded, "name": name}), 200
 
 @app.route('/encrypt/ECB', methods=['POST'])
 def encrypt_ecb():
@@ -117,7 +138,10 @@ def decrypt_ecb():
     name = data['name']
     key = data['key'].encode()
 
-    raw = bytes.fromhex(data['ciphertext'])
+    try:
+        raw = bytes.fromhex(data['ciphertext'])
+    except ValueError:
+        return jsonify({"error": "Ciphertext is not a valid hexadecimal string."}), 400
 
     if not raw.startswith(b"MODE:ECB\n"):
         return jsonify({"error": "Wrong encryption mode. Expected ECB."}), 400
@@ -126,7 +150,14 @@ def decrypt_ecb():
     ciphertext = raw[len(b"MODE:ECB\n"):]
 
     decrypted_plaintext = ecb_decrypt(ciphertext, key)
-    return jsonify({'res': decrypted_plaintext.decode(), "name": name}), 200
+    if decrypted_plaintext is None:
+        return jsonify({"error": "Invalid ciphertext or corrupted data."}), 400
+    try:
+        decoded = decrypted_plaintext.decode()
+    except UnicodeDecodeError:
+        return jsonify({"error": "Decryption succeeded but output is not valid UTF-8."}), 400
+
+    return jsonify({'res': decoded, "name": name}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
